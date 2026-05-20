@@ -3,10 +3,11 @@ Photo slideshow for Pimoroni Presto.
 
 - Streams Immich thumbnails to the SD card and decodes via jpegdec
 - Falls back to small RAM thumbnails if no SD card is present
-- Touch left half  → previous photo
-- Touch right half → next photo
-- Touch top bar   → show info overlay (album name / date)
-- Long press      → return to config (clears Immich config)
+- Touch left half   → previous photo
+- Touch right half  → next photo
+- Touch top bar     → show info overlay (album name / date)
+- Touch bottom bar  → toggle checking/incompatible status messages
+- Long press        → return to config (clears Immich config)
 """
 
 import time
@@ -25,7 +26,8 @@ except ImportError:
     _HAVE_JPEG = False
 
 _LONG_PRESS_MS = 1500
-_INFO_BAR_H = 40
+_INFO_BAR_H    = 40   # top touch strip → info overlay
+_STATUS_BAR_H  = 60   # bottom touch strip → toggle status messages
 _THUMB_SIZE = "preview"
 _SD_CACHE = "/sd/presto_img.jpg"
 
@@ -127,7 +129,8 @@ class Slideshow:
         self._use_sd = _mount_sd()
         self._has_image = False
         self._skip_ids = set()
-        self._check_count = 0  # photos tried in current search pass
+        self._check_count = 0   # photos tried in current search pass
+        self._show_status = True  # show checking/incompatible overlays
         print("SD card:", "OK" if self._use_sd else "not available — using thumbnail mode")
 
     # ------------------------------------------------------------------
@@ -183,6 +186,8 @@ class Slideshow:
     # ------------------------------------------------------------------
     def _show_incompatible(self, fname, reason):
         """Show a brief overlay explaining why an image was skipped."""
+        if not self._show_status:
+            return
         if fname:
             line = "{}: {}".format(reason, fname[:24])
         else:
@@ -200,7 +205,7 @@ class Slideshow:
             fname = asset.get("originalFileName", "")
             if not self._has_image:
                 display_utils.show_progress(self.display, "Loading...", 0.5)
-            else:
+            elif self._show_status:
                 # Keep the current photo visible; show a small status bar so
                 # the user can see we are actively searching, not hung.
                 label = "Checking: {}".format(fname) if fname else "Checking photo..."
@@ -308,6 +313,8 @@ class Slideshow:
 
         if ty < _INFO_BAR_H:
             action = "info"
+        elif ty > self.h - _STATUS_BAR_H:
+            action = "toggle_status"
         elif tx < self.w // 2:
             action = "prev"
         else:
@@ -362,6 +369,11 @@ class Slideshow:
             elif action == "info":
                 self._show_info(self.assets[self.index])
                 next_advance = time.time() + interval
+
+            elif action == "toggle_status":
+                self._show_status = not self._show_status
+                label = "Status messages: ON" if self._show_status else "Status messages: OFF"
+                display_utils.show_info_overlay(self.display, label, duration=1)
 
             elif action == "long_press":
                 display_utils.show_message(
