@@ -127,6 +127,7 @@ class Slideshow:
         self._use_sd = _mount_sd()
         self._has_image = False
         self._skip_ids = set()
+        self._check_count = 0  # photos tried in current search pass
         print("SD card:", "OK" if self._use_sd else "not available — using thumbnail mode")
 
     # ------------------------------------------------------------------
@@ -186,8 +187,17 @@ class Slideshow:
         img_bytes = None
 
         try:
+            self._check_count += 1
             if not self._has_image:
                 display_utils.show_progress(self.display, "Loading...", 0.5)
+            else:
+                # Keep the current photo visible; show a small status bar so
+                # the user can see we are actively searching, not hung.
+                fname = asset.get("originalFileName", "")
+                label = "Checking: {}".format(fname) if fname else "Checking photo..."
+                if self._check_count > 1:
+                    label += " ({} tried)".format(self._check_count)
+                display_utils.show_info_overlay(self.display, label, duration=0)
             if self._use_sd:
                 self.client.stream_thumbnail(asset_id, _SD_CACHE, _THUMB_SIZE)
                 if not _is_jpeg(_SD_CACHE):
@@ -234,6 +244,7 @@ class Slideshow:
             j.decode(x, y, scale, dither=True)
             self.display.update()
             self._has_image = True
+            self._check_count = 0  # reset for next search pass
             return True
 
         except Exception as e:
@@ -294,6 +305,7 @@ class Slideshow:
     # ------------------------------------------------------------------
     def _advance(self, delta):
         """Move to the next/prev displayable asset, skipping known-bad ones instantly."""
+        self._check_count = 0
         n = len(self.assets)
         for _ in range(n):
             self.index = (self.index + delta) % n
