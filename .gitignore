@@ -1,7 +1,12 @@
 # Built UF2 artifacts
 presto-photos.uf2
+presto-photos-v*.uf2
+
+# Build counter (local only — incremented by build_uf2.py)
+build_number.txt
 
 # Downloaded firmware (fetched by build_uf2.py)
+pimoroni-presto-firmware.uf2
 presto-v*.uf2
 
 # Claude Code local settings

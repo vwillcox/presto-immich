@@ -9,14 +9,19 @@ Requirements (run once):
     pip install littlefs-python
 
 Usage:
-    python build_uf2.py                       # auto-downloads firmware
+    python build_uf2.py                       # auto-downloads firmware, auto build number
+    python build_uf2.py --build 5             # force a specific build number
     python build_uf2.py --firmware my.uf2     # use a local firmware file
-    python build_uf2.py --output custom.uf2   # rename output
+    python build_uf2.py --output custom.uf2   # rename output (skips build number)
+
+Build numbering:
+    Each run increments build_number.txt and produces presto-photos-vN.uf2.
+    Use --build N to pin a specific number without touching the counter.
 
 Flash:
     1. Hold BOOTSEL while plugging the Presto into USB
     2. A drive (RPI-RP2 or similar) mounts
-    3. Copy presto-photos.uf2 onto that drive
+    3. Copy the .uf2 onto that drive
     4. The Presto reboots directly into Presto Photos
 """
 
@@ -320,8 +325,10 @@ def main():
     )
     ap.add_argument("--firmware", metavar="FILE",
                     help="Local Pimoroni Presto .uf2 (auto-downloaded if omitted)")
-    ap.add_argument("--output",   metavar="FILE", default="presto-photos.uf2",
-                    help="Output file (default: presto-photos.uf2)")
+    ap.add_argument("--output",   metavar="FILE", default=None,
+                    help="Output file (default: presto-photos-vN.uf2)")
+    ap.add_argument("--build",    metavar="N", type=int, default=None,
+                    help="Build number to use (default: auto-increment from build_number.txt)")
     ap.add_argument("--app-dir",  metavar="DIR",  default=".",
                     help="Directory containing Python app files (default: current dir)")
     ap.add_argument("--fs-start", metavar="ADDR", type=lambda x: int(x, 0),
@@ -334,12 +341,27 @@ def main():
                          "stale LittleFS data. Produces a ~30 MB file.")
     args = ap.parse_args()
 
-    app_dir  = Path(args.app_dir).resolve()
-    out_path = Path(args.output)
+    app_dir = Path(args.app_dir).resolve()
+
+    # ── Build number ─────────────────────────────────────────────────────────
+    build_file = Path("build_number.txt")
+    if args.build is not None:
+        build = args.build          # explicit override — don't touch the file
+    else:
+        try:
+            build = int(build_file.read_text().strip()) + 1
+        except (FileNotFoundError, ValueError):
+            build = 1
+
+    if args.output:
+        out_path = Path(args.output)
+    else:
+        out_path = Path("presto-photos-v{}.uf2".format(build))
 
     print()
     print("╔══════════════════════════════════════════╗")
     print("║   Presto Photos — UF2 builder            ║")
+    print("║   Build v{:<32}║".format(build))
     print("╚══════════════════════════════════════════╝")
 
     # ── 1. Firmware ─────────────────────────────────────────────────────
@@ -432,15 +454,20 @@ def main():
     combined = _stitch(fw_raw, fs_uf2)
     out_path.write_bytes(combined)
     sz_mb = out_path.stat().st_size / 1024 / 1024
-    print(f"\n  ✓  {out_path}  ({sz_mb:.1f} MB)")
+    print(f"\n  ✓  {out_path}  ({sz_mb:.1f} MB)  [build v{build}]")
+
+    # Persist the build number only after a successful write
+    if args.build is None:       # don't overwrite when --build N was explicit
+        build_file.write_text(str(build))
 
     print("""
 ┌─ How to flash ────────────────────────────────────┐
 │  1. Hold BOOTSEL on Presto while plugging in USB  │
 │  2. A drive (RPI-RP2 or similar) appears          │
-│  3. Drag presto-photos.uf2 onto that drive        │
+│  3. Drag {:<41}│
+│     onto that drive                               │
 │  4. Presto reboots into Presto Photos             │
-└───────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────┘""".format(str(out_path) + "  "))
 
 First boot:
   • QR code appears — scan it to join 'Presto-Photos' WiFi
