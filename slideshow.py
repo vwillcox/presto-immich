@@ -27,7 +27,7 @@ except ImportError:
 
 _LONG_PRESS_MS = 1500
 _INFO_BAR_H    = 40   # top touch strip → info overlay
-_STATUS_BAR_H  = 60   # bottom touch strip → toggle status messages
+_STATUS_BAR_H  = 80   # bottom touch strip → toggle status messages (larger = easier to hit)
 _THUMB_SIZE = "preview"
 _SD_CACHE = "/sd/presto_img.jpg"
 
@@ -135,29 +135,36 @@ class Slideshow:
 
     # ------------------------------------------------------------------
     def _load_assets(self):
-        display_utils.show_progress(self.display, "Connecting...", 0.0)
+        server = self.cfg.get("immich_url", "").replace("https://", "").replace("http://", "")
+        display_utils.show_progress(
+            self.display, "Connecting to Immich...", 0.0,
+            server[:38] or None
+        )
         album_ids = self.cfg.get("album_ids", [])
 
         def _on_progress(done, total, name, asset_count):
             if name is None:
-                # Request is in flight — show which album and that we're waiting
+                # HTTP request is in flight for this album
                 fetching = done + 1
                 pct = (done + 0.4) / total if total > 0 else 0.05
-                title = "Album {}/{}".format(fetching, total)
-                subtitle = "Downloading..."
+                title = "Fetching album {} of {}".format(fetching, total)
+                subtitle = "Waiting for Immich server..."
             elif name in ("(failed)", "(error)"):
                 pct = done / total if total > 0 else 0.05
-                title = "Album {}/{}".format(done, total)
-                subtitle = "Skipped (error)"
+                title = "Album {} of {} skipped".format(done, total)
+                subtitle = "Could not load — continuing"
             elif name == "Fetching album list...":
                 pct = 0.05
-                title = "Connecting..."
-                subtitle = "Fetching album list"
+                title = "Getting album list..."
+                subtitle = server[:38] or "Contacting Immich server"
             else:
-                # Request finished — show real album name and running photo count
+                # Album fetched successfully — show name and running total
                 pct = done / total if total > 0 else 0.05
-                title = "Album {}/{}".format(done, total)
-                subtitle = "{} - {} photos".format(name, asset_count) if name else ""
+                title = "Album {} of {} loaded".format(done, total)
+                if name:
+                    subtitle = "{} — {} photos found so far".format(name, asset_count)
+                else:
+                    subtitle = "{} photos found so far".format(asset_count)
             display_utils.show_progress(self.display, title, pct, subtitle or None)
 
         try:
@@ -171,10 +178,9 @@ class Slideshow:
             time.sleep(5)
             return False
 
-        # Brief "found" summary before shuffling
         display_utils.show_progress(
-            self.display, "Shuffling...", 1.0,
-            "Found {} photos".format(len(assets))
+            self.display, "Preparing slideshow...", 1.0,
+            "Shuffling {} photos — almost ready!".format(len(assets))
         )
 
         for i in range(len(assets) - 1, 0, -1):
@@ -324,11 +330,36 @@ class Slideshow:
         return action
 
     # ------------------------------------------------------------------
+    def _poll_toggle(self):
+        """
+        Non-blocking touch check that only handles the bottom-strip toggle.
+        Called from inside _advance() so the user can toggle status messages
+        while the device is actively searching for a displayable image.
+        """
+        if self.touch is None:
+            return
+        self.touch.poll()
+        if not self.touch.state:
+            return
+        tx = self.touch.x
+        ty = self.touch.y
+        # Drain the touch before acting so we don't re-trigger
+        while self.touch.state:
+            self.touch.poll()
+            time.sleep_ms(10)
+        if ty > self.h - _STATUS_BAR_H:
+            self._show_status = not self._show_status
+            label = "Status messages: ON" if self._show_status else "Status messages: OFF"
+            print("Toggle status messages:", self._show_status, "touch at ({},{})".format(tx, ty))
+            display_utils.show_info_overlay(self.display, label, duration=1)
+
+    # ------------------------------------------------------------------
     def _advance(self, delta):
         """Move to the next/prev displayable asset, skipping known-bad ones instantly."""
         self._check_count = 0
         n = len(self.assets)
         for _ in range(n):
+            self._poll_toggle()   # allow bottom-strip toggle while searching
             self.index = (self.index + delta) % n
             asset = self.assets[self.index]
             if asset.get("id") in self._skip_ids:
