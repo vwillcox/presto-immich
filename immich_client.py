@@ -27,6 +27,10 @@ class ImmichClient:
             resp.close()
             raise ImmichError("HTTP {} for {}".format(resp.status_code, path))
         try:
+            # Set a read timeout so a stalled body transfer fails rather than
+            # hanging forever (connection timeout is harder to control in urequests)
+            if hasattr(resp, "raw") and hasattr(resp.raw, "settimeout"):
+                resp.raw.settimeout(30)
             data = resp.json()
         finally:
             resp.close()
@@ -74,8 +78,10 @@ class ImmichClient:
         seen = set()
         total = len(album_ids)
         for i, aid in enumerate(album_ids):
+            # Signal BEFORE the request so the display shows "Downloading…"
+            # while the HTTP call blocks.  name=None is the "in-flight" sentinel.
             if on_progress:
-                on_progress(i, total, "Album {}/{}".format(i + 1, total), len(assets))
+                on_progress(i, total, None, len(assets))
             try:
                 album = self.get_album(aid)
                 name = album.get("albumName", "")
@@ -92,12 +98,13 @@ class ImmichClient:
                         })
                 del album
                 gc.collect()
+                # Signal AFTER: name is now known, count is updated
                 if on_progress:
                     on_progress(i + 1, total, name, len(assets))
             except Exception as e:
                 print("Error loading album {}: {}".format(aid, e))
                 if on_progress:
-                    on_progress(i + 1, total, "(error)", len(assets))
+                    on_progress(i + 1, total, "(failed)", len(assets))
         return assets
 
     def download_thumbnail(self, asset_id, size="thumbnail"):
@@ -134,6 +141,8 @@ class ImmichClient:
             resp.close()
             raise ImmichError("Thumbnail HTTP {}".format(resp.status_code))
         try:
+            if hasattr(resp, "raw") and hasattr(resp.raw, "settimeout"):
+                resp.raw.settimeout(30)
             with open(dest_path, "wb") as f:
                 while True:
                     chunk = resp.raw.read(4096)

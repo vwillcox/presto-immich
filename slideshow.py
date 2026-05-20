@@ -135,9 +135,25 @@ class Slideshow:
         album_ids = self.cfg.get("album_ids", [])
 
         def _on_progress(done, total, name, asset_count):
-            pct = done / total if total > 0 else 0.05
-            title = "Loading {}/{}".format(done, total) if total > 1 else "Loading..."
-            subtitle = "{} ({} photos)".format(name, asset_count) if name else ""
+            if name is None:
+                # Request is in flight — show which album and that we're waiting
+                fetching = done + 1
+                pct = (done + 0.4) / total if total > 0 else 0.05
+                title = "Album {}/{}".format(fetching, total)
+                subtitle = "Downloading..."
+            elif name in ("(failed)", "(error)"):
+                pct = done / total if total > 0 else 0.05
+                title = "Album {}/{}".format(done, total)
+                subtitle = "Skipped (error)"
+            elif name == "Fetching album list...":
+                pct = 0.05
+                title = "Connecting..."
+                subtitle = "Fetching album list"
+            else:
+                # Request finished — show real album name and running photo count
+                pct = done / total if total > 0 else 0.05
+                title = "Album {}/{}".format(done, total)
+                subtitle = "{} - {} photos".format(name, asset_count) if name else ""
             display_utils.show_progress(self.display, title, pct, subtitle or None)
 
         try:
