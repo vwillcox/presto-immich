@@ -6,6 +6,7 @@ All calls are synchronous (blocking). Images are returned as raw bytes.
 
 import urequests
 import json
+import gc
 
 
 class ImmichError(Exception):
@@ -25,8 +26,10 @@ class ImmichClient:
         if resp.status_code not in (200, 201):
             resp.close()
             raise ImmichError("HTTP {} for {}".format(resp.status_code, path))
-        data = resp.json()
-        resp.close()
+        try:
+            data = resp.json()
+        finally:
+            resp.close()
         return data
 
     # ------------------------------------------------------------------
@@ -48,38 +51,51 @@ class ImmichClient:
 
     def get_all_assets(self, album_ids, on_progress=None):
         """
-        Return a flat list of asset dicts from the given album IDs.
+        Return a flat list of minimal asset dicts from the given album IDs.
         If album_ids is empty, fetches all assets from all albums.
+
+        Each returned dict contains only the fields the slideshow needs:
+            {"id", "originalFileName", "fileCreatedAt"}
+        The full album JSON is discarded immediately to keep RAM free.
 
         on_progress(done, total, album_name, asset_count) is called:
           - once before fetching each album  (done = index before fetch)
           - once after  fetching each album  (done = index + 1, name known)
-        Any argument may be None/0 if not yet available.
         """
         if not album_ids:
             if on_progress:
                 on_progress(0, 1, "Fetching album list...", 0)
             albums = self.get_albums()
             album_ids = [a["id"] for a in albums]
+            del albums
+            gc.collect()
 
         assets = []
         seen = set()
         total = len(album_ids)
         for i, aid in enumerate(album_ids):
-            # Signal that we are about to fetch this album
             if on_progress:
                 on_progress(i, total, "Album {}/{}".format(i + 1, total), len(assets))
             try:
                 album = self.get_album(aid)
                 name = album.get("albumName", "")
+                # Strip each asset to only the 3 fields used by the slideshow.
+                # This frees the bulk of the album JSON as soon as possible.
                 for asset in album.get("assets", []):
-                    if asset["id"] not in seen:
-                        seen.add(asset["id"])
-                        assets.append(asset)
-                # Signal completion of this album (name now known)
+                    asset_id = asset.get("id")
+                    if asset_id and asset_id not in seen:
+                        seen.add(asset_id)
+                        assets.append({
+                            "id": asset_id,
+                            "originalFileName": asset.get("originalFileName", ""),
+                            "fileCreatedAt": asset.get("fileCreatedAt", ""),
+                        })
+                del album
+                gc.collect()
                 if on_progress:
                     on_progress(i + 1, total, name, len(assets))
-            except ImmichError:
+            except Exception as e:
+                print("Error loading album {}: {}".format(aid, e))
                 if on_progress:
                     on_progress(i + 1, total, "(error)", len(assets))
         return assets

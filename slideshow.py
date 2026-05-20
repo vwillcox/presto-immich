@@ -142,8 +142,8 @@ class Slideshow:
 
         try:
             assets = self.client.get_all_assets(album_ids, on_progress=_on_progress)
-        except ImmichError as e:
-            display_utils.show_error(self.display, "Immich error", str(e))
+        except Exception as e:
+            display_utils.show_error(self.display, "Load error", str(e))
             time.sleep(5)
             return False
         if not assets:
