@@ -38,22 +38,44 @@ def show_error(display, msg, detail=None):
     show_message(display, msg, detail, fg=(255, 80, 80), bg=(40, 0, 0))
 
 
-def show_progress(display, title, pct):
-    """0.0 – 1.0 progress bar"""
+def show_progress(display, title, pct, subtitle=None):
+    """0.0 – 1.0 progress bar with optional subtitle line."""
     w, h = display.get_bounds()
     clear(display, 20, 20, 40)
+
+    # Layout: if subtitle present, shift title up to make room
+    title_y = h // 2 - 50 if subtitle else h // 2 - 30
+
     display.set_pen(_pen(display, 255, 255, 255))
     scale = 2
     char_w = 6 * scale
-    tx = max(0, (w - len(title) * char_w) // 2)
-    display.text(title, tx, h // 2 - 30, w, scale)
-    # Bar
+    max_chars = w // char_w
+    t = title if len(title) <= max_chars else title[:max_chars]
+    tx = max(0, (w - len(t) * char_w) // 2)
+    display.text(t, tx, title_y, w, scale)
+
+    if subtitle:
+        display.set_pen(_pen(display, 160, 180, 220))
+        sub = subtitle if len(subtitle) <= max_chars else subtitle[:max_chars]
+        sx = max(0, (w - len(sub) * char_w) // 2)
+        display.text(sub, sx, title_y + 26, w, scale)
+
+    # Progress bar
     bar_x, bar_y = 20, h // 2 + 10
     bar_w, bar_h = w - 40, 12
     display.set_pen(_pen(display, 60, 60, 80))
     display.rectangle(bar_x, bar_y, bar_w, bar_h)
     display.set_pen(_pen(display, 80, 160, 255))
-    display.rectangle(bar_x, bar_y, int(bar_w * pct), bar_h)
+    fill = int(bar_w * max(0.0, min(1.0, pct)))
+    if fill > 0:
+        display.rectangle(bar_x, bar_y, fill, bar_h)
+
+    # Percentage label below bar
+    pct_label = "{}%".format(int(pct * 100))
+    display.set_pen(_pen(display, 120, 140, 180))
+    pl_x = max(0, (w - len(pct_label) * char_w) // 2)
+    display.text(pct_label, pl_x, bar_y + bar_h + 6, w, scale)
+
     display.update()
 
 

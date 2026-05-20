@@ -131,10 +131,17 @@ class Slideshow:
 
     # ------------------------------------------------------------------
     def _load_assets(self):
-        display_utils.show_progress(self.display, "Loading albums...", 0.1)
+        display_utils.show_progress(self.display, "Connecting...", 0.0)
         album_ids = self.cfg.get("album_ids", [])
+
+        def _on_progress(done, total, name, asset_count):
+            pct = done / total if total > 0 else 0.05
+            title = "Loading {}/{}".format(done, total) if total > 1 else "Loading..."
+            subtitle = "{} ({} photos)".format(name, asset_count) if name else ""
+            display_utils.show_progress(self.display, title, pct, subtitle or None)
+
         try:
-            assets = self.client.get_all_assets(album_ids)
+            assets = self.client.get_all_assets(album_ids, on_progress=_on_progress)
         except ImmichError as e:
             display_utils.show_error(self.display, "Immich error", str(e))
             time.sleep(5)
@@ -143,6 +150,13 @@ class Slideshow:
             display_utils.show_error(self.display, "No photos found", "Check album config")
             time.sleep(5)
             return False
+
+        # Brief "found" summary before shuffling
+        display_utils.show_progress(
+            self.display, "Shuffling...", 1.0,
+            "Found {} photos".format(len(assets))
+        )
+
         for i in range(len(assets) - 1, 0, -1):
             j = random.randint(0, i)
             assets[i], assets[j] = assets[j], assets[i]

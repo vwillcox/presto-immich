@@ -46,26 +46,42 @@ class ImmichClient:
         """Return album dict including 'assets' list."""
         return self._get("/api/albums/{}".format(album_id))
 
-    def get_all_assets(self, album_ids):
+    def get_all_assets(self, album_ids, on_progress=None):
         """
         Return a flat list of asset dicts from the given album IDs.
         If album_ids is empty, fetches all assets from all albums.
+
+        on_progress(done, total, album_name, asset_count) is called:
+          - once before fetching each album  (done = index before fetch)
+          - once after  fetching each album  (done = index + 1, name known)
+        Any argument may be None/0 if not yet available.
         """
         if not album_ids:
+            if on_progress:
+                on_progress(0, 1, "Fetching album list...", 0)
             albums = self.get_albums()
             album_ids = [a["id"] for a in albums]
 
         assets = []
         seen = set()
-        for aid in album_ids:
+        total = len(album_ids)
+        for i, aid in enumerate(album_ids):
+            # Signal that we are about to fetch this album
+            if on_progress:
+                on_progress(i, total, "Album {}/{}".format(i + 1, total), len(assets))
             try:
                 album = self.get_album(aid)
+                name = album.get("albumName", "")
                 for asset in album.get("assets", []):
                     if asset["id"] not in seen:
                         seen.add(asset["id"])
                         assets.append(asset)
+                # Signal completion of this album (name now known)
+                if on_progress:
+                    on_progress(i + 1, total, name, len(assets))
             except ImmichError:
-                pass
+                if on_progress:
+                    on_progress(i + 1, total, "(error)", len(assets))
         return assets
 
     def download_thumbnail(self, asset_id, size="thumbnail"):
