@@ -501,23 +501,24 @@ def main():
     # auto-run increments from here (whether --build was used or not)
     _VERSION_FILE.write_text(version)
 
+    fname = str(out_path)
     print("""
 ┌─ How to flash ────────────────────────────────────┐
 │  1. Hold BOOTSEL on Presto while plugging in USB  │
 │  2. A drive (RPI-RP2 or similar) appears          │
-│  3. Drag {:<41}│
+│  3. Drag {fname:<41}│
 │     onto that drive                               │
 │  4. Presto reboots into Presto Photos             │
-└───────────────────────────────────────────────────┘""".format(str(out_path) + "  "))
+└───────────────────────────────────────────────────┘
 
 First boot:
-  • QR code appears — scan it to join 'Presto-Photos' WiFi
-  • Open http://192.168.4.1 and enter your home WiFi details
-  • After reboot, open http://<presto-ip> to connect to Immich
+  - QR code appears -- scan it to join 'Presto-Photos' WiFi
+  - Open http://192.168.4.1 and enter your home WiFi details
+  - After reboot, open http://<presto-ip> to connect to Immich
 
 Tip: if the Presto shows a filesystem error, reflash with --full
      to overwrite any stale data from a previous install.
-""")
+""".format(fname=fname + "  "))
 
 
 if __name__ == "__main__":
