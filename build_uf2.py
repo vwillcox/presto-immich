@@ -9,14 +9,16 @@ Requirements (run once):
     pip install littlefs-python
 
 Usage:
-    python build_uf2.py                       # auto-downloads firmware, auto build number
-    python build_uf2.py --build 5             # force a specific build number
+    python build_uf2.py                       # auto-increment patch → 0.0.2
+    python build_uf2.py --build 1.0.0         # set an explicit version
     python build_uf2.py --firmware my.uf2     # use a local firmware file
-    python build_uf2.py --output custom.uf2   # rename output (skips build number)
+    python build_uf2.py --output custom.uf2   # explicit output name
 
-Build numbering:
-    Each run increments build_number.txt and produces presto-photos-vN.uf2.
-    Use --build N to pin a specific number without touching the counter.
+Build numbering (semantic versioning  MAJOR.MINOR.PATCH):
+    Starts at 0.0.1.  Each run increments the patch number and saves it
+    to build_number.txt.  Use --build MAJOR.MINOR.PATCH to jump to any
+    version (e.g. 1.0.0 for a full release); the counter is updated so
+    the next auto-run continues from there (e.g. → 1.0.1).
 
 Flash:
     1. Hold BOOTSEL while plugging the Presto into USB
@@ -314,6 +316,52 @@ def _build_lfs(app_dir: Path, block_count: int) -> bytes:
 
 
 # ===========================================================================
+# Semantic version helpers  (MAJOR.MINOR.PATCH)
+# ===========================================================================
+
+_VERSION_FILE = Path("build_number.txt")
+_VERSION_START = "0.0.1"
+
+
+def _parse_version(s: str) -> tuple:
+    """'1.2.3' → (1, 2, 3).  Raises ValueError on bad format."""
+    parts = s.strip().split(".")
+    if len(parts) != 3:
+        raise ValueError("expected MAJOR.MINOR.PATCH, got: {!r}".format(s))
+    try:
+        return tuple(int(p) for p in parts)
+    except ValueError:
+        raise ValueError("version components must be integers, got: {!r}".format(s))
+
+
+def _fmt_version(major: int, minor: int, patch: int) -> str:
+    return "{}.{}.{}".format(major, minor, patch)
+
+
+def _next_version(current: str) -> str:
+    """Increment the patch component: '0.0.5' → '0.0.6'."""
+    major, minor, patch = _parse_version(current)
+    return _fmt_version(major, minor, patch + 1)
+
+
+def _resolve_version(requested) -> str:
+    """
+    Return the version string to use for this build.
+    - requested is None  → auto-increment from _VERSION_FILE
+    - requested is a str → validate and use as-is
+    """
+    if requested is not None:
+        _parse_version(requested)   # raises ValueError on bad format
+        return requested.strip()
+    try:
+        current = _VERSION_FILE.read_text().strip()
+        _parse_version(current)     # validate file contents
+        return _next_version(current)
+    except (FileNotFoundError, ValueError):
+        return _VERSION_START
+
+
+# ===========================================================================
 # Main
 # ===========================================================================
 
@@ -326,9 +374,9 @@ def main():
     ap.add_argument("--firmware", metavar="FILE",
                     help="Local Pimoroni Presto .uf2 (auto-downloaded if omitted)")
     ap.add_argument("--output",   metavar="FILE", default=None,
-                    help="Output file (default: presto-photos-vN.uf2)")
-    ap.add_argument("--build",    metavar="N", type=int, default=None,
-                    help="Build number to use (default: auto-increment from build_number.txt)")
+                    help="Output file (default: presto-photos-vX.Y.Z.uf2)")
+    ap.add_argument("--build",    metavar="X.Y.Z", default=None,
+                    help="Version to use, e.g. 1.0.0 (default: auto-increment patch)")
     ap.add_argument("--app-dir",  metavar="DIR",  default=".",
                     help="Directory containing Python app files (default: current dir)")
     ap.add_argument("--fs-start", metavar="ADDR", type=lambda x: int(x, 0),
@@ -343,25 +391,18 @@ def main():
 
     app_dir = Path(args.app_dir).resolve()
 
-    # ── Build number ─────────────────────────────────────────────────────────
-    build_file = Path("build_number.txt")
-    if args.build is not None:
-        build = args.build          # explicit override — don't touch the file
-    else:
-        try:
-            build = int(build_file.read_text().strip()) + 1
-        except (FileNotFoundError, ValueError):
-            build = 1
+    # ── Version ───────────────────────────────────────────────────────────────
+    try:
+        version = _resolve_version(args.build)
+    except ValueError as e:
+        sys.exit("Invalid --build version: {}".format(e))
 
-    if args.output:
-        out_path = Path(args.output)
-    else:
-        out_path = Path("presto-photos-v{}.uf2".format(build))
+    out_path = Path(args.output) if args.output else Path("presto-photos-v{}.uf2".format(version))
 
     print()
     print("╔══════════════════════════════════════════╗")
     print("║   Presto Photos — UF2 builder            ║")
-    print("║   Build v{:<32}║".format(build))
+    print("║   Version v{:<30}║".format(version))
     print("╚══════════════════════════════════════════╝")
 
     # ── 1. Firmware ─────────────────────────────────────────────────────
@@ -454,11 +495,11 @@ def main():
     combined = _stitch(fw_raw, fs_uf2)
     out_path.write_bytes(combined)
     sz_mb = out_path.stat().st_size / 1024 / 1024
-    print(f"\n  ✓  {out_path}  ({sz_mb:.1f} MB)  [build v{build}]")
+    print(f"\n  ✓  {out_path}  ({sz_mb:.1f} MB)  [v{version}]")
 
-    # Persist the build number only after a successful write
-    if args.build is None:       # don't overwrite when --build N was explicit
-        build_file.write_text(str(build))
+    # Persist the version after every successful build so the next
+    # auto-run increments from here (whether --build was used or not)
+    _VERSION_FILE.write_text(version)
 
     print("""
 ┌─ How to flash ────────────────────────────────────┐
