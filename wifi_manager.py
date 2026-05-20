@@ -46,6 +46,18 @@ def connect_sta(ssid, password, timeout=20):
     deadline = time.time() + timeout
     while not sta.isconnected() and time.time() < deadline:
         time.sleep(0.5)
+    if sta.isconnected():
+        # Disable CYW43 WiFi power-save so the chip stays fully awake.
+        # Without this the radio sleeps between beacon intervals (~100 ms)
+        # which adds significant latency to every HTTP chunk — noticeably
+        # slower on battery than on USB where the chip stays awake.
+        try:
+            sta.config(pm=sta.PM_NONE)
+        except (ValueError, AttributeError):
+            try:
+                sta.config(pm=0xa11140)   # raw PM_NONE / PM_PERFORMANCE value
+            except Exception:
+                pass
     return sta.isconnected()
 
 
