@@ -181,6 +181,15 @@ class Slideshow:
         return True
 
     # ------------------------------------------------------------------
+    def _show_incompatible(self, fname, reason):
+        """Show a brief overlay explaining why an image was skipped."""
+        if fname:
+            line = "{}: {}".format(reason, fname[:24])
+        else:
+            line = "{} — skipping".format(reason)
+        display_utils.show_info_overlay(self.display, line, duration=0)
+
+    # ------------------------------------------------------------------
     def _display_asset(self, asset):
         """Download and display one asset. Returns True on success, False to skip."""
         asset_id = asset.get("id", "")
@@ -188,12 +197,12 @@ class Slideshow:
 
         try:
             self._check_count += 1
+            fname = asset.get("originalFileName", "")
             if not self._has_image:
                 display_utils.show_progress(self.display, "Loading...", 0.5)
             else:
                 # Keep the current photo visible; show a small status bar so
                 # the user can see we are actively searching, not hung.
-                fname = asset.get("originalFileName", "")
                 label = "Checking: {}".format(fname) if fname else "Checking photo..."
                 if self._check_count > 1:
                     label += " ({} tried)".format(self._check_count)
@@ -201,18 +210,21 @@ class Slideshow:
             if self._use_sd:
                 self.client.stream_thumbnail(asset_id, _SD_CACHE, _THUMB_SIZE)
                 if not _is_jpeg(_SD_CACHE):
-                    print("Skipping non-JPEG asset", asset_id)
+                    print("Incompatible asset (not JPEG):", asset_id)
                     self._skip_ids.add(asset_id)
+                    self._show_incompatible(fname, "Not a JPEG")
                     return False
             else:
                 img_bytes = self.client.download_thumbnail(asset_id, "thumbnail")
                 if not _is_jpeg(img_bytes):
-                    print("Skipping non-JPEG asset", asset_id)
+                    print("Incompatible asset (not JPEG):", asset_id)
                     self._skip_ids.add(asset_id)
+                    self._show_incompatible(fname, "Not a JPEG")
                     return False
         except ImmichError as e:
-            print("Load error:", e)
+            print("Network error:", e)
             self._skip_ids.add(asset_id)
+            self._show_incompatible(fname, "Network error")
             return False
 
         if not _HAVE_JPEG:
@@ -250,6 +262,8 @@ class Slideshow:
         except Exception as e:
             print("Decode error:", e)
             self._skip_ids.add(asset_id)
+            fname = asset.get("originalFileName", "")
+            self._show_incompatible(fname, "Cannot decode")
             return False
         finally:
             del img_bytes
