@@ -9,54 +9,18 @@ An Immich photo-slideshow app for the **Pimoroni Presto** (RP2350 + touchscreen)
 | Requirement | Notes |
 |---|---|
 | Pimoroni Presto | RP2350, capacitive touchscreen, 16 MB flash |
-| Python 3.10+ on your PC | For running `build_uf2.py` |
-| `littlefs-python` | `pip install littlefs-python` |
 | Immich server | v1.90+ self-hosted, reachable on your LAN |
 
 ---
 
-## Installing — one-file method (recommended)
+## Installing
 
-`build_uf2.py` downloads the official Pimoroni firmware, embeds all the app
-files into a LittleFS filesystem image, and stitches them into a single `.uf2`.
+Download the latest `presto-photos.uf2` from the [Releases](../../releases) page, then:
 
-```bash
-# 1. Install the one dependency
-pip install littlefs-python
-
-# 2. Build the firmware (downloads Pimoroni firmware automatically)
-python build_uf2.py
-
-# → writes presto-photos.uf2
-```
-
-**To flash:**
 1. Hold **BOOTSEL** on the Presto while plugging in USB
 2. A drive named **RPI-RP2** (or similar) mounts on your PC
 3. Drag `presto-photos.uf2` onto that drive
 4. The Presto reboots directly into Presto Photos
-
-If you already downloaded the Pimoroni firmware separately:
-```bash
-python build_uf2.py --firmware pimoroni-presto-vX.Y.Z-micropython.uf2
-```
-
----
-
-## Installing — manual file upload (alternative)
-
-Use **Thonny** or the **mpremote** CLI if you prefer to upload files directly.
-You must first flash the [Pimoroni MicroPython firmware](https://github.com/pimoroni/pimoroni-pico/releases)
-separately (it includes the required `jpegdec`, `picographics`, and `presto` modules).
-
-```bash
-pip install mpremote
-
-mpremote cp main.py config_manager.py wifi_manager.py display_utils.py \
-           ap_mode.py config_server.py immich_client.py slideshow.py :
-mpremote mkdir lib
-mpremote cp lib/qrcode.py :lib/qrcode.py
-```
 
 ---
 
@@ -135,3 +99,44 @@ lib/
 | Immich connection refused | Check URL includes port, e.g. `http://192.168.1.10:2283` |
 | Photos very slow to load | Switch `_THUMB_SIZE` in `slideshow.py` from `preview` to `thumbnail` |
 | QR code won't scan | Try a pure-white background; increase module size by narrowing the margin in `display_utils.draw_qr` |
+
+---
+
+## Building from source
+
+If you want to modify the app and build your own UF2, you'll need:
+
+| Requirement | Notes |
+|---|---|
+| Python 3.10+ on your PC | For running `build_uf2.py` |
+| `littlefs-python` | `pip install littlefs-python` |
+
+```bash
+# 1. Install the one dependency
+pip install littlefs-python
+
+# 2. Build the firmware (downloads Pimoroni firmware automatically)
+python build_uf2.py
+
+# → writes presto-photos.uf2
+```
+
+If you already downloaded the Pimoroni firmware separately:
+```bash
+python build_uf2.py --firmware pimoroni-presto-vX.Y.Z-micropython.uf2
+```
+
+### Manual file upload (alternative)
+
+Use **Thonny** or the **mpremote** CLI to upload files directly.
+You must first flash the [Pimoroni MicroPython firmware](https://github.com/pimoroni/pimoroni-pico/releases)
+separately (it includes the required `jpegdec`, `picographics`, and `presto` modules).
+
+```bash
+pip install mpremote
+
+mpremote cp main.py config_manager.py wifi_manager.py display_utils.py \
+           ap_mode.py config_server.py immich_client.py slideshow.py :
+mpremote mkdir lib
+mpremote cp lib/qrcode.py :lib/qrcode.py
+```
