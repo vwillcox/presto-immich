@@ -1,0 +1,8 @@
+# Built UF2 artifacts
+presto-photos.uf2
+
+# Downloaded firmware (fetched by build_uf2.py)
+presto-v*.uf2
+
+# Claude Code local settings
+.claude/
