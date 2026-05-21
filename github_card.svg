@@ -22,25 +22,25 @@
     </linearGradient>
 
     <!-- Screen vignette -->
-    <radialGradient id="vignette" cx="50%" cy="50%" r="50%">
-      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="50%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
     </radialGradient>
 
     <!-- Ambient glow behind device -->
     <radialGradient id="deviceGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#3070d0" stop-opacity="0.18"/>
+      <stop offset="0%"   stop-color="#3070d0" stop-opacity="0.16"/>
       <stop offset="100%" stop-color="#3070d0" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Clip to screen circle -->
+    <!-- Clip content to screen rectangle -->
     <clipPath id="screenClip">
-      <circle cx="268" cy="322" r="206"/>
+      <rect x="64" y="130" width="384" height="384" rx="10"/>
     </clipPath>
 
-    <!-- Soft drop shadow / glow on ring -->
-    <filter id="ringGlow" x="-25%" y="-25%" width="150%" height="150%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+    <!-- Glow on device frame -->
+    <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
@@ -71,84 +71,89 @@
   <line x1="1120" y1="640"  x2="1280" y2="480"  stroke="#ffffff" stroke-width="0.4" opacity="0.03"/>
 
   <!-- ── Device ambient glow ─────────────────────────────────────── -->
-  <ellipse cx="268" cy="322" rx="310" ry="310" fill="url(#deviceGlow)"/>
+  <ellipse cx="256" cy="322" rx="300" ry="290" fill="url(#deviceGlow)"/>
 
-  <!-- ── Presto device — outer decorative rings ─────────────────── -->
-  <circle cx="268" cy="322" r="252" fill="none" stroke="#1a3060" stroke-width="1.5" opacity="0.35"/>
-  <circle cx="268" cy="322" r="238" fill="none" stroke="#1e3870" stroke-width="1"   opacity="0.25"/>
+  <!-- ── Presto device — outer decorative rings (square) ────────── -->
+  <rect x="34"  y="108" width="444" height="444" rx="32"
+        fill="none" stroke="#1a3060" stroke-width="1.5" opacity="0.35"/>
+  <rect x="44"  y="118" width="424" height="424" rx="28"
+        fill="none" stroke="#1e3870" stroke-width="1"   opacity="0.25"/>
 
-  <!-- Device bezel -->
-  <circle cx="268" cy="322" r="226" fill="#0a1526"/>
-  <circle cx="268" cy="322" r="222" fill="#0c1b30"/>
+  <!-- Device outer case / bezel -->
+  <rect x="50"  y="124" width="412" height="412" rx="24" fill="#0a1526"/>
+  <rect x="56"  y="130" width="400" height="400" rx="21" fill="#0c1b30"/>
 
-  <!-- ── Screen content (clipped to circle) ─────────────────────── -->
+  <!-- ── Screen content (clipped to square screen) ──────────────── -->
   <g clip-path="url(#screenClip)">
 
     <!-- Sky background -->
-    <rect x="62" y="116" width="412" height="412" fill="url(#skyGrad)"/>
+    <rect x="64" y="130" width="384" height="384" fill="url(#skyGrad)"/>
 
     <!-- Stars -->
-    <circle cx="110" cy="155" r="1.8" fill="#fff" opacity="0.75"/>
-    <circle cx="152" cy="138" r="1.2" fill="#fff" opacity="0.55"/>
-    <circle cx="195" cy="163" r="2.2" fill="#fff" opacity="0.80"/>
-    <circle cx="238" cy="143" r="1.5" fill="#fff" opacity="0.60"/>
-    <circle cx="285" cy="130" r="1.8" fill="#fff" opacity="0.70"/>
-    <circle cx="340" cy="152" r="1.2" fill="#fff" opacity="0.50"/>
-    <circle cx="388" cy="140" r="2.0" fill="#fff" opacity="0.75"/>
-    <circle cx="426" cy="165" r="1.5" fill="#fff" opacity="0.60"/>
-    <circle cx="135" cy="195" r="1.0" fill="#fff" opacity="0.40"/>
-    <circle cx="310" cy="175" r="1.5" fill="#fff" opacity="0.65"/>
-    <circle cx="455" cy="145" r="1.2" fill="#fff" opacity="0.45"/>
-    <circle cx="92"  cy="210" r="1.5" fill="#fff" opacity="0.55"/>
-    <circle cx="360" cy="115" r="1.0" fill="#fff" opacity="0.50"/>
+    <circle cx="108" cy="165" r="1.8" fill="#fff" opacity="0.75"/>
+    <circle cx="148" cy="148" r="1.2" fill="#fff" opacity="0.55"/>
+    <circle cx="192" cy="172" r="2.0" fill="#fff" opacity="0.78"/>
+    <circle cx="236" cy="152" r="1.5" fill="#fff" opacity="0.60"/>
+    <circle cx="280" cy="140" r="1.8" fill="#fff" opacity="0.70"/>
+    <circle cx="330" cy="162" r="1.2" fill="#fff" opacity="0.50"/>
+    <circle cx="374" cy="150" r="2.0" fill="#fff" opacity="0.72"/>
+    <circle cx="416" cy="170" r="1.5" fill="#fff" opacity="0.58"/>
+    <circle cx="130" cy="198" r="1.0" fill="#fff" opacity="0.40"/>
+    <circle cx="305" cy="180" r="1.5" fill="#fff" opacity="0.65"/>
+    <circle cx="440" cy="155" r="1.2" fill="#fff" opacity="0.45"/>
+    <circle cx="88"  cy="215" r="1.5" fill="#fff" opacity="0.52"/>
+    <circle cx="355" cy="132" r="1.0" fill="#fff" opacity="0.48"/>
+    <circle cx="175" cy="135" r="1.3" fill="#fff" opacity="0.55"/>
 
     <!-- Moon glow halo -->
-    <circle cx="382" cy="196" r="42" fill="#204080" opacity="0.40"/>
+    <circle cx="376" cy="202" r="40" fill="#204080" opacity="0.38"/>
     <!-- Moon -->
-    <circle cx="382" cy="196" r="30" fill="#c8daf0"/>
-    <!-- Moon shading (crescent effect) -->
-    <circle cx="370" cy="190" r="24" fill="#a0b8d0" opacity="0.45"/>
+    <circle cx="376" cy="202" r="28" fill="#c8daf0"/>
+    <!-- Moon shading -->
+    <circle cx="364" cy="196" r="22" fill="#a0b8d0" opacity="0.42"/>
 
     <!-- Distant mountain range -->
     <polygon
-      points="62,348  108,268  152,318  200,238  256,298  310,222  368,285  418,240  474,290  474,348"
+      points="64,352  110,272  155,320  205,240  262,305  318,228  374,292  422,248  448,280  448,352"
       fill="#0a1c38"/>
 
     <!-- Foreground mountain range -->
     <polygon
-      points="62,348  130,275  186,334  248,258  318,318  388,262  448,310  474,290  474,348"
+      points="64,352  132,278  190,338  252,260  322,322  390,266  448,310  448,352"
       fill="#060e20"/>
 
     <!-- Lake / ground -->
-    <rect x="62" y="348" width="412" height="180" fill="#060c1c"/>
+    <rect x="64" y="352" width="384" height="162" fill="#060c1c"/>
 
     <!-- Water reflection of moon -->
-    <ellipse cx="268" cy="390" rx="18" ry="55" fill="#1a3870" opacity="0.55"/>
-    <ellipse cx="268" cy="390" rx="8"  ry="55" fill="#2050a0" opacity="0.30"/>
+    <ellipse cx="256" cy="396" rx="16" ry="52" fill="#1a3870" opacity="0.55"/>
+    <ellipse cx="256" cy="396" rx="7"  ry="52" fill="#2050a0" opacity="0.28"/>
 
     <!-- Water ripple lines -->
-    <ellipse cx="268" cy="400" rx="80" ry="5" fill="none" stroke="#1e4080" stroke-width="1.2" opacity="0.35"/>
-    <ellipse cx="268" cy="416" rx="60" ry="4" fill="none" stroke="#1e4080" stroke-width="1.0" opacity="0.25"/>
-    <ellipse cx="268" cy="430" rx="42" ry="3" fill="none" stroke="#1e4080" stroke-width="0.8" opacity="0.18"/>
+    <ellipse cx="256" cy="408" rx="76" ry="5" fill="none" stroke="#1e4080" stroke-width="1.2" opacity="0.32"/>
+    <ellipse cx="256" cy="424" rx="56" ry="4" fill="none" stroke="#1e4080" stroke-width="1.0" opacity="0.22"/>
+    <ellipse cx="256" cy="438" rx="38" ry="3" fill="none" stroke="#1e4080" stroke-width="0.8" opacity="0.16"/>
 
     <!-- Bottom info bar -->
-    <rect x="62" y="440" width="412" height="40" fill="#04080f" opacity="0.88"/>
-    <text x="268" y="466"
+    <rect x="64" y="472" width="384" height="42" fill="#04080f" opacity="0.88"/>
+    <text x="256" y="499"
           font-family="'Courier New', Courier, monospace"
           font-size="14" font-weight="600"
           fill="#4888e0" text-anchor="middle" letter-spacing="2.5">PRESTO PHOTOS</text>
 
     <!-- Screen vignette overlay -->
-    <circle cx="268" cy="322" r="206" fill="url(#vignette)"/>
+    <rect x="64" y="130" width="384" height="384" rx="10" fill="url(#vignette)"/>
 
   </g>
 
-  <!-- ── Device ring frame (drawn over clipped content) ─────────── -->
-  <circle cx="268" cy="322" r="206" fill="none"
-          stroke="#2a5090" stroke-width="5"
-          filter="url(#ringGlow)"/>
-  <circle cx="268" cy="322" r="209" fill="none" stroke="#162848" stroke-width="2" opacity="0.6"/>
-  <circle cx="268" cy="322" r="203" fill="none" stroke="#0e1e38" stroke-width="2" opacity="0.4"/>
+  <!-- ── Device screen frame (drawn over clipped content) ───────── -->
+  <rect x="64" y="130" width="384" height="384" rx="10"
+        fill="none" stroke="#2a5090" stroke-width="5"
+        filter="url(#ringGlow)"/>
+  <rect x="61" y="127" width="390" height="390" rx="12"
+        fill="none" stroke="#162848" stroke-width="2" opacity="0.55"/>
+  <rect x="67" y="133" width="378" height="378" rx="9"
+        fill="none" stroke="#0e1e38" stroke-width="1.5" opacity="0.38"/>
 
   <!-- ── Right-side text content ─────────────────────────────────── -->
 
@@ -169,7 +174,6 @@
   <!-- Horizontal rule -->
   <rect x="544" y="264" width="694" height="1.5" fill="#1e3860" rx="1"/>
 
-  <!-- Feature list -->
   <!-- Feature 1 -->
   <rect x="546" y="287" width="8" height="8" rx="2" fill="#4888e0"/>
   <text x="568" y="298"
@@ -199,54 +203,46 @@
   <text x="568" y="418"
         font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
         font-size="25" fill="#80aad0">
-    Touch controls &#183; auto-advance &#183; ambient light sensor
+    Touch controls &#183; auto-advance &#183; slideshow timer
   </text>
 
   <!-- Horizontal rule -->
   <rect x="544" y="444" width="694" height="1" fill="#182e50" rx="1"/>
 
   <!-- Tech badge row -->
-  <!-- MicroPython -->
   <rect x="544" y="462" width="178" height="42" rx="7" fill="#0c1a30" stroke="#244070" stroke-width="1.5"/>
   <text x="633" y="489"
         font-family="'Courier New', Courier, monospace"
         font-size="17" font-weight="600"
         fill="#5090e0" text-anchor="middle">MicroPython</text>
 
-  <!-- RP2350 -->
   <rect x="734" y="462" width="118" height="42" rx="7" fill="#0c1a30" stroke="#244070" stroke-width="1.5"/>
   <text x="793" y="489"
         font-family="'Courier New', Courier, monospace"
         font-size="17" font-weight="600"
         fill="#5090e0" text-anchor="middle">RP2350</text>
 
-  <!-- Immich -->
   <rect x="864" y="462" width="102" height="42" rx="7" fill="#0c1a30" stroke="#244070" stroke-width="1.5"/>
   <text x="915" y="489"
         font-family="'Courier New', Courier, monospace"
         font-size="17" font-weight="600"
         fill="#5090e0" text-anchor="middle">Immich</text>
 
-  <!-- LittleFS -->
   <rect x="978" y="462" width="120" height="42" rx="7" fill="#0c1a30" stroke="#244070" stroke-width="1.5"/>
   <text x="1038" y="489"
         font-family="'Courier New', Courier, monospace"
         font-size="17" font-weight="600"
         fill="#5090e0" text-anchor="middle">LittleFS</text>
 
-  <!-- WiFi -->
   <rect x="1110" y="462" width="80" height="42" rx="7" fill="#0c1a30" stroke="#244070" stroke-width="1.5"/>
   <text x="1150" y="489"
         font-family="'Courier New', Courier, monospace"
         font-size="17" font-weight="600"
         fill="#5090e0" text-anchor="middle">WiFi</text>
 
-  <!-- Repo URL / footer -->
+  <!-- Footer repo URL -->
   <text x="544" y="568"
         font-family="'Courier New', Courier, monospace"
         font-size="18" fill="#2e5080">github.com/vwillcox/presto-immich</text>
-
-  <!-- Version tag -->
-  <rect x="544" y="582" width="0" height="0"/>
 
 </svg>
