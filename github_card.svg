@@ -163,7 +163,7 @@
         font-size="90" font-weight="800"
         fill="url(#titleGrad)"
         filter="url(#textShadow)"
-        letter-spacing="-2">Presto Photos</text>
+        letter-spacing="-2">Presto Immich</text>
 
   <!-- Subtitle / tagline -->
   <text x="546" y="240"
